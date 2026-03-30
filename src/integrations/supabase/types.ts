@@ -14,7 +14,185 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      candidates: {
+        Row: {
+          age: string
+          certifications: string[]
+          created_at: string
+          email: string
+          experience_months: number
+          file_name: string
+          gender: string
+          id: string
+          name: string
+          phone: string
+          qualifications: string[]
+          raw_text: string
+          skills_extracted: string[]
+          surname: string
+        }
+        Insert: {
+          age?: string
+          certifications?: string[]
+          created_at?: string
+          email?: string
+          experience_months?: number
+          file_name: string
+          gender?: string
+          id?: string
+          name?: string
+          phone?: string
+          qualifications?: string[]
+          raw_text?: string
+          skills_extracted?: string[]
+          surname?: string
+        }
+        Update: {
+          age?: string
+          certifications?: string[]
+          created_at?: string
+          email?: string
+          experience_months?: number
+          file_name?: string
+          gender?: string
+          id?: string
+          name?: string
+          phone?: string
+          qualifications?: string[]
+          raw_text?: string
+          skills_extracted?: string[]
+          surname?: string
+        }
+        Relationships: []
+      }
+      departments: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      position_profiles: {
+        Row: {
+          certification_keywords: string[]
+          created_at: string
+          department_id: string
+          id: string
+          key: string
+          must_have_keywords: string[]
+          name: string
+          relevant_fields: string[]
+          skill_keywords: string[]
+          updated_at: string
+        }
+        Insert: {
+          certification_keywords?: string[]
+          created_at?: string
+          department_id: string
+          id?: string
+          key: string
+          must_have_keywords?: string[]
+          name: string
+          relevant_fields?: string[]
+          skill_keywords?: string[]
+          updated_at?: string
+        }
+        Update: {
+          certification_keywords?: string[]
+          created_at?: string
+          department_id?: string
+          id?: string
+          key?: string
+          must_have_keywords?: string[]
+          name?: string
+          relevant_fields?: string[]
+          skill_keywords?: string[]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "position_profiles_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "departments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ranking_results: {
+        Row: {
+          attachment_points: number
+          candidate_id: string
+          certification_points: number
+          certs_matched: string
+          created_at: string
+          id: string
+          must_haves_missing: string
+          notes: string
+          position_profile_id: string
+          qualification_points: number
+          skills_matched: string
+          skills_points: number
+          total_score: number
+        }
+        Insert: {
+          attachment_points?: number
+          candidate_id: string
+          certification_points?: number
+          certs_matched?: string
+          created_at?: string
+          id?: string
+          must_haves_missing?: string
+          notes?: string
+          position_profile_id: string
+          qualification_points?: number
+          skills_matched?: string
+          skills_points?: number
+          total_score?: number
+        }
+        Update: {
+          attachment_points?: number
+          candidate_id?: string
+          certification_points?: number
+          certs_matched?: string
+          created_at?: string
+          id?: string
+          must_haves_missing?: string
+          notes?: string
+          position_profile_id?: string
+          qualification_points?: number
+          skills_matched?: string
+          skills_points?: number
+          total_score?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ranking_results_candidate_id_fkey"
+            columns: ["candidate_id"]
+            isOneToOne: false
+            referencedRelation: "candidates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ranking_results_position_profile_id_fkey"
+            columns: ["position_profile_id"]
+            isOneToOne: false
+            referencedRelation: "position_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
