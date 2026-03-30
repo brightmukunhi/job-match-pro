@@ -172,7 +172,7 @@ export default function UploadCVs() {
                   {candidates.map(c => (
                     <TableRow key={c.file_name}>
                       <TableCell>
-                        {c.status === "done" && <CheckCircle2 className="h-4 w-4 text-green-500" />}
+                        {c.status === "done" && <CheckCircle2 className="h-4 w-4 text-primary" />}
                         {c.status === "error" && <XCircle className="h-4 w-4 text-destructive" />}
                         {c.status === "parsing" && <Loader2 className="h-4 w-4 animate-spin" />}
                       </TableCell>
