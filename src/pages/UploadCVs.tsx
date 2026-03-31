@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Upload, FileText, CheckCircle2, XCircle, Loader2 } from "lucide-react";
+import { Upload, FileText, CheckCircle2, XCircle, Loader2, CloudUpload, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 
 interface ParsedCandidate {
@@ -30,6 +30,7 @@ export default function UploadCVs() {
   const [processing, setProcessing] = useState(false);
   const [progress, setProgress] = useState(0);
   const [saved, setSaved] = useState(false);
+  const [dragActive, setDragActive] = useState(false);
 
   const handleFiles = useCallback(async (files: FileList | null) => {
     if (!files || files.length === 0) return;
@@ -87,8 +88,6 @@ export default function UploadCVs() {
     const toSave = candidates.filter(c => c.status === "done");
     if (toSave.length === 0) { toast.error("No successfully parsed candidates to save"); return; }
 
-    // Re-extract full candidate data to get raw_text
-    // For now we save what we have
     const rows = toSave.map(c => ({
       file_name: c.file_name,
       name: c.name,
@@ -109,28 +108,39 @@ export default function UploadCVs() {
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
+    setDragActive(false);
     handleFiles(e.dataTransfer.files);
   }, [handleFiles]);
+
+  const doneCount = candidates.filter(c => c.status === "done").length;
+  const errorCount = candidates.filter(c => c.status === "error").length;
 
   return (
     <AppLayout>
       <div className="max-w-5xl mx-auto space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold">Upload CVs</h1>
+        <div className="animate-fade-in">
+          <h1 className="text-2xl font-display font-bold">Upload CVs</h1>
           <p className="text-muted-foreground text-sm">Upload PDF/DOCX resumes for automatic parsing and scoring</p>
         </div>
 
         {/* Drop zone */}
         <Card
-          className="border-dashed border-2 cursor-pointer hover:border-primary/50 transition-colors"
-          onDragOver={e => e.preventDefault()}
+          className={`border-2 border-dashed cursor-pointer transition-all duration-300 animate-fade-in-delay-1 ${
+            dragActive
+              ? "border-primary bg-primary/5 scale-[1.01]"
+              : "border-border/50 hover:border-primary/40 hover:bg-primary/[0.02]"
+          }`}
+          onDragOver={e => { e.preventDefault(); setDragActive(true); }}
+          onDragLeave={() => setDragActive(false)}
           onDrop={handleDrop}
           onClick={() => document.getElementById("cv-upload")?.click()}
         >
-          <CardContent className="flex flex-col items-center justify-center py-12">
-            <Upload className="h-10 w-10 text-muted-foreground mb-3" />
-            <p className="text-sm font-medium">Drop CV files here or click to browse</p>
-            <p className="text-xs text-muted-foreground mt-1">Supports PDF and DOCX • Multiple files allowed</p>
+          <CardContent className="flex flex-col items-center justify-center py-16">
+            <div className="h-16 w-16 rounded-2xl gradient-primary flex items-center justify-center mb-4 glow">
+              <CloudUpload className="h-8 w-8 text-primary-foreground" />
+            </div>
+            <p className="font-display font-semibold text-lg">Drop CV files here or click to browse</p>
+            <p className="text-sm text-muted-foreground mt-1">Supports PDF and DOCX • Multiple files allowed</p>
             <input
               id="cv-upload"
               type="file"
@@ -143,57 +153,76 @@ export default function UploadCVs() {
         </Card>
 
         {processing && (
-          <div className="space-y-2">
+          <div className="space-y-2 animate-fade-in">
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Loader2 className="h-4 w-4 animate-spin" /> Processing files...
+              <Loader2 className="h-4 w-4 animate-spin text-primary" /> Processing files...
             </div>
-            <Progress value={progress} />
+            <Progress value={progress} className="h-2" />
           </div>
         )}
 
         {candidates.length > 0 && (
           <>
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-lg">Parsed Candidates ({candidates.filter(c => c.status === "done").length}/{candidates.length})</CardTitle>
+            {/* Summary */}
+            <div className="flex gap-3 animate-fade-in">
+              <Badge variant="secondary" className="gap-1.5 py-1 px-3">
+                <Sparkles className="h-3 w-3" /> {candidates.length} total
+              </Badge>
+              {doneCount > 0 && (
+                <Badge className="gap-1.5 py-1 px-3 bg-success text-success-foreground">
+                  <CheckCircle2 className="h-3 w-3" /> {doneCount} parsed
+                </Badge>
+              )}
+              {errorCount > 0 && (
+                <Badge variant="destructive" className="gap-1.5 py-1 px-3">
+                  <XCircle className="h-3 w-3" /> {errorCount} failed
+                </Badge>
+              )}
+            </div>
+
+            <Card className="border-border/50 overflow-hidden animate-fade-in-delay-1">
+              <CardHeader className="pb-3 bg-secondary/30">
+                <CardTitle className="text-base font-display">Parsed Candidates</CardTitle>
               </CardHeader>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Status</TableHead>
-                    <TableHead>File</TableHead>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Phone</TableHead>
-                    <TableHead>Exp (mo)</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {candidates.map(c => (
-                    <TableRow key={c.file_name}>
-                      <TableCell>
-                        {c.status === "done" && <CheckCircle2 className="h-4 w-4 text-primary" />}
-                        {c.status === "error" && <XCircle className="h-4 w-4 text-destructive" />}
-                        {c.status === "parsing" && <Loader2 className="h-4 w-4 animate-spin" />}
-                      </TableCell>
-                      <TableCell className="font-mono text-xs max-w-[200px] truncate">
-                        <div className="flex items-center gap-1"><FileText className="h-3 w-3" />{c.file_name}</div>
-                      </TableCell>
-                      <TableCell>{c.name} {c.surname}</TableCell>
-                      <TableCell className="text-xs">{c.email}</TableCell>
-                      <TableCell className="text-xs">{c.phone}</TableCell>
-                      <TableCell>{c.experience_months}</TableCell>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-12">Status</TableHead>
+                      <TableHead>File</TableHead>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Email</TableHead>
+                      <TableHead>Phone</TableHead>
+                      <TableHead className="text-center">Exp (mo)</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {candidates.map(c => (
+                      <TableRow key={c.file_name}>
+                        <TableCell>
+                          {c.status === "done" && <CheckCircle2 className="h-4 w-4 text-success" />}
+                          {c.status === "error" && <XCircle className="h-4 w-4 text-destructive" />}
+                          {c.status === "parsing" && <Loader2 className="h-4 w-4 animate-spin text-primary" />}
+                        </TableCell>
+                        <TableCell className="font-mono text-xs max-w-[200px] truncate">
+                          <div className="flex items-center gap-1.5"><FileText className="h-3 w-3 text-muted-foreground" />{c.file_name}</div>
+                        </TableCell>
+                        <TableCell className="font-medium">{c.name} {c.surname}</TableCell>
+                        <TableCell className="text-xs text-muted-foreground">{c.email}</TableCell>
+                        <TableCell className="text-xs text-muted-foreground">{c.phone}</TableCell>
+                        <TableCell className="text-center">{c.experience_months}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
             </Card>
 
-            <div className="flex gap-2">
-              <Button onClick={saveToDatabase} disabled={saved || candidates.filter(c => c.status === "done").length === 0}>
+            <div className="flex gap-2 animate-fade-in-delay-2">
+              <Button onClick={saveToDatabase} disabled={saved || doneCount === 0} className="gradient-primary text-primary-foreground gap-2 glow">
                 {saved ? "Saved ✓" : "Save to Database"}
               </Button>
-              <Button variant="outline" onClick={() => { setCandidates([]); setSaved(false); }}>Clear</Button>
+              <Button variant="outline" onClick={() => { setCandidates([]); setSaved(false); }}>Clear All</Button>
             </div>
           </>
         )}
