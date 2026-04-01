@@ -13,9 +13,24 @@ export default function Auth() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
+  const [forgotPassword, setForgotPassword] = useState(false);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+
+    if (forgotPassword) {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      if (error) {
+        toast.error(error.message);
+      } else {
+        toast.success("Password reset link sent! Check your email.");
+      }
+      setLoading(false);
+      return;
+    }
 
     if (isLogin) {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
@@ -33,7 +48,7 @@ export default function Auth() {
       if (error) {
         toast.error(error.message);
       } else {
-        toast.success("Check your email to confirm your account");
+        toast.success("Account created! You can now sign in.");
       }
     }
 
