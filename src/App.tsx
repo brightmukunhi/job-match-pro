@@ -9,6 +9,7 @@ import Profiles from "./pages/Profiles";
 import UploadCVs from "./pages/UploadCVs";
 import Rankings from "./pages/Rankings";
 import Auth from "./pages/Auth";
+import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
 import { Loader2 } from "lucide-react";
 
