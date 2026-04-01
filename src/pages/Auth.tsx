@@ -80,10 +80,10 @@ export default function Auth() {
       <Card className="w-full max-w-md border-border/50 shadow-2xl shadow-primary/5 animate-fade-in-delay-1">
         <CardHeader className="text-center pb-2">
           <CardTitle className="text-xl font-display">
-            {isLogin ? "Welcome back" : "Create account"}
+            {forgotPassword ? "Reset password" : isLogin ? "Welcome back" : "Create account"}
           </CardTitle>
           <CardDescription>
-            {isLogin ? "Sign in to access the recruitment dashboard" : "Get started with CV Auto-Ranker"}
+            {forgotPassword ? "Enter your email to receive a reset link" : isLogin ? "Sign in to access the recruitment dashboard" : "Get started with CV Auto-Ranker"}
           </CardDescription>
         </CardHeader>
         <CardContent>
