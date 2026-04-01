@@ -103,26 +103,39 @@ export default function Auth() {
                 />
               </div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="password" className="text-sm font-medium">Password</Label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  id="password"
-                  type="password"
-                  value={password}
-                  onChange={e => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="pl-10 h-11 bg-secondary/50 border-border/50 focus:bg-card transition-colors"
-                  required
-                  minLength={6}
-                />
+            {!forgotPassword && (
+              <div className="space-y-2">
+                <Label htmlFor="password" className="text-sm font-medium">Password</Label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="password"
+                    type="password"
+                    value={password}
+                    onChange={e => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="pl-10 h-11 bg-secondary/50 border-border/50 focus:bg-card transition-colors"
+                    required
+                    minLength={6}
+                  />
+                </div>
               </div>
-            </div>
+            )}
+            {isLogin && !forgotPassword && (
+              <div className="text-right">
+                <button
+                  type="button"
+                  onClick={() => setForgotPassword(true)}
+                  className="text-xs text-muted-foreground hover:text-primary transition-colors"
+                >
+                  Forgot password?
+                </button>
+              </div>
+            )}
             <Button type="submit" className="w-full h-11 gradient-primary text-primary-foreground font-medium gap-2 glow hover:opacity-90 transition-opacity" disabled={loading}>
               {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : (
                 <>
-                  {isLogin ? "Sign In" : "Create Account"}
+                  {forgotPassword ? "Send Reset Link" : isLogin ? "Sign In" : "Create Account"}
                   <ArrowRight className="h-4 w-4" />
                 </>
               )}
