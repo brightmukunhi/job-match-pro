@@ -294,39 +294,91 @@ export function extractCandidateFromText(rawText: string, fileName: string): Can
   const text = rawText || "";
   const textLc = text.toLowerCase();
 
-  // Name extraction
+  // Name extraction — robust for various CV formats
   let firstName = "", lastName = "";
   const lines = text.split("\n").map(l => l.trim()).filter(Boolean);
 
-  // Try explicit labels
-  for (const ln of lines.slice(0, 45)) {
-    const lnLower = ln.toLowerCase();
-    if (["name:", "full name:", "applicant:", "candidate:"].some(l => lnLower.includes(l))) {
-      const namePart = ln.replace(/(?:name|full\s*name|applicant|candidate)\s*[:：]\s*/i, "").replace(/[^\w\s-]/g, " ").trim();
-      if (namePart && namePart.length >= 5 && namePart.length <= 50) {
-        const parts = namePart.split(/\s+/);
-        if (parts.length >= 2) {
-          firstName = parts[0].charAt(0).toUpperCase() + parts[0].slice(1).toLowerCase();
-          lastName = parts[parts.length - 1].charAt(0).toUpperCase() + parts[parts.length - 1].slice(1).toLowerCase();
+  // Helper to capitalize a name part
+  const capName = (s: string) => s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
+
+  // Helper to check if a string looks like a person name (2-4 alpha words)
+  const looksLikeName = (s: string): string[] | null => {
+    const clean = s.replace(/[^\p{L}\s'-]/gu, " ").trim();
+    if (clean.length < 3 || clean.length > 60) return null;
+    const words = clean.split(/\s+/).filter(w => w.length > 0);
+    if (words.length < 2 || words.length > 5) return null;
+    const stopWords = new Set(["the", "and", "for", "with", "from", "page", "of", "to", "in", "a", "an", "on", "at", "by"]);
+    if (words.some(w => stopWords.has(w.toLowerCase()))) return null;
+    // Each word should be alphabetic (allow hyphens/apostrophes)
+    if (!words.every(w => /^[\p{L}'-]+$/u.test(w))) return null;
+    // Filter out words that are common section headings
+    const lower = clean.toLowerCase();
+    if ([...BAD_NAME_TOKENS].some(bad => lower.includes(bad))) return null;
+    return words;
+  };
+
+  // Strategy 1: Explicit labels (Name:, Full Name:, Applicant:, etc.)
+  const nameLabels = [
+    /(?:full\s*name|name|applicant|candidate|naam)\s*[:：]\s*(.+)/i,
+    /(?:first\s*name|given\s*name)\s*[:：]\s*(.+)/i,
+    /(?:surname|last\s*name|family\s*name)\s*[:：]\s*(.+)/i,
+  ];
+
+  for (const ln of lines.slice(0, 50)) {
+    for (const re of nameLabels) {
+      const m = ln.match(re);
+      if (m) {
+        const val = m[1].replace(/[^\p{L}\s'-]/gu, " ").trim();
+        if (val.length >= 2 && val.length <= 50) {
+          const parts = val.split(/\s+/).filter(w => w.length > 0);
+          // Check if it's a first-name-only label
+          if (/first\s*name|given\s*name/i.test(ln)) {
+            if (!firstName && parts[0]) firstName = capName(parts[0]);
+          } else if (/surname|last\s*name|family\s*name/i.test(ln)) {
+            if (!lastName && parts[0]) lastName = capName(parts[0]);
+          } else if (parts.length >= 2) {
+            firstName = capName(parts[0]);
+            lastName = capName(parts[parts.length - 1]);
+          } else if (parts.length === 1 && !firstName) {
+            firstName = capName(parts[0]);
+          }
+        }
+      }
+    }
+    if (firstName && lastName) break;
+  }
+
+  // Strategy 2: First non-heading line that looks like a name (title-case, ALL CAPS, or mixed)
+  if (!firstName) {
+    for (const ln of lines.slice(0, 30)) {
+      const words = looksLikeName(ln);
+      if (words) {
+        // Accept title-case, ALL CAPS, or lowercase names
+        const allAlpha = words.every(w => /^[\p{L}'-]+$/u.test(w));
+        if (allAlpha) {
+          firstName = capName(words[0]);
+          lastName = capName(words[words.length - 1]);
           break;
         }
       }
     }
   }
 
-  // Fallback: top-section title-case
+  // Strategy 3: Look for "Name Surname" pattern near email/phone in first 20 lines
   if (!firstName) {
-    for (const ln of lines.slice(0, 40)) {
-      const clean = ln.replace(/[^\w\s-]/g, " ").trim();
-      const lower = clean.toLowerCase();
-      if ([...BAD_NAME_TOKENS].some(bad => lower.includes(bad))) continue;
-      if (clean.length < 4 || clean.length > 50) continue;
-      const words = clean.split(/\s+/);
-      if (words.length >= 2 && words.length <= 4) {
-        const looksName = words.every(w => w.length <= 1 || (w[0] === w[0].toUpperCase()));
-        const stopWords = new Set(["the", "and", "for", "with", "from", "page", "of", "to", "in"]);
-        if (looksName && !words.some(w => stopWords.has(w.toLowerCase()))) {
-          firstName = words[0]; lastName = words[words.length - 1];
+    for (const ln of lines.slice(0, 20)) {
+      // Lines containing email or phone often have the name nearby
+      if (EMAIL_RE.test(ln) || PHONE_RE.test(ln)) {
+        // Remove email and phone, see if what's left is a name
+        const stripped = ln
+          .replace(EMAIL_RE, "")
+          .replace(PHONE_RE, "")
+          .replace(/[|•·,;]/g, " ")
+          .trim();
+        const words = looksLikeName(stripped);
+        if (words) {
+          firstName = capName(words[0]);
+          lastName = capName(words[words.length - 1]);
           break;
         }
       }
@@ -339,13 +391,27 @@ export function extractCandidateFromText(rawText: string, fileName: string): Can
   const email = emailMatch ? emailMatch[0] : "";
   const phone = phoneMatch ? phoneMatch[1].trim() : "";
 
-  // Email fallback for name
+  // Strategy 4: Email prefix fallback
   if (!firstName && email) {
     const prefix = email.split("@")[0];
-    const parts = prefix.split(/[._-]/);
-    if (parts.length >= 2 && parts[0].length > 1 && parts[parts.length - 1].length > 1) {
-      firstName = parts[0].charAt(0).toUpperCase() + parts[0].slice(1);
-      lastName = parts[parts.length - 1].charAt(0).toUpperCase() + parts[parts.length - 1].slice(1);
+    const parts = prefix.split(/[._-]/).filter(p => p.length > 1 && /^[a-zA-Z]+$/.test(p));
+    if (parts.length >= 2) {
+      firstName = capName(parts[0]);
+      lastName = capName(parts[parts.length - 1]);
+    }
+  }
+
+  // Strategy 5: Filename fallback (e.g. "John_Doe_CV.pdf" or "John Doe Resume.pdf")
+  if (!firstName) {
+    const baseName = fileName.replace(/\.[^.]+$/, ""); // remove extension
+    const cleaned = baseName
+      .replace(/[-_]+/g, " ")
+      .replace(/\b(cv|resume|résumé|curriculum\s*vitae)\b/gi, "")
+      .trim();
+    const words = looksLikeName(cleaned);
+    if (words) {
+      firstName = capName(words[0]);
+      lastName = capName(words[words.length - 1]);
     }
   }
 
