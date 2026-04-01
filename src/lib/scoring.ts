@@ -391,13 +391,27 @@ export function extractCandidateFromText(rawText: string, fileName: string): Can
   const email = emailMatch ? emailMatch[0] : "";
   const phone = phoneMatch ? phoneMatch[1].trim() : "";
 
-  // Email fallback for name
+  // Strategy 4: Email prefix fallback
   if (!firstName && email) {
     const prefix = email.split("@")[0];
-    const parts = prefix.split(/[._-]/);
-    if (parts.length >= 2 && parts[0].length > 1 && parts[parts.length - 1].length > 1) {
-      firstName = parts[0].charAt(0).toUpperCase() + parts[0].slice(1);
-      lastName = parts[parts.length - 1].charAt(0).toUpperCase() + parts[parts.length - 1].slice(1);
+    const parts = prefix.split(/[._-]/).filter(p => p.length > 1 && /^[a-zA-Z]+$/.test(p));
+    if (parts.length >= 2) {
+      firstName = capName(parts[0]);
+      lastName = capName(parts[parts.length - 1]);
+    }
+  }
+
+  // Strategy 5: Filename fallback (e.g. "John_Doe_CV.pdf" or "John Doe Resume.pdf")
+  if (!firstName) {
+    const baseName = fileName.replace(/\.[^.]+$/, ""); // remove extension
+    const cleaned = baseName
+      .replace(/[-_]+/g, " ")
+      .replace(/\b(cv|resume|résumé|curriculum\s*vitae)\b/gi, "")
+      .trim();
+    const words = looksLikeName(cleaned);
+    if (words) {
+      firstName = capName(words[0]);
+      lastName = capName(words[words.length - 1]);
     }
   }
 
