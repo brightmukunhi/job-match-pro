@@ -142,15 +142,25 @@ export default function Auth() {
             </Button>
           </form>
 
-          <div className="mt-6 text-center">
-            <button
-              type="button"
-              onClick={() => setIsLogin(!isLogin)}
-              className="text-sm text-muted-foreground hover:text-primary transition-colors"
-            >
-              {isLogin ? "Don't have an account? " : "Already have an account? "}
-              <span className="font-medium text-primary">{isLogin ? "Sign up" : "Sign in"}</span>
-            </button>
+          <div className="mt-6 text-center space-y-2">
+            {forgotPassword ? (
+              <button
+                type="button"
+                onClick={() => setForgotPassword(false)}
+                className="text-sm text-muted-foreground hover:text-primary transition-colors"
+              >
+                <span className="font-medium text-primary">Back to sign in</span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setIsLogin(!isLogin)}
+                className="text-sm text-muted-foreground hover:text-primary transition-colors"
+              >
+                {isLogin ? "Don't have an account? " : "Already have an account? "}
+                <span className="font-medium text-primary">{isLogin ? "Sign up" : "Sign in"}</span>
+              </button>
+            )}
           </div>
         </CardContent>
       </Card>
