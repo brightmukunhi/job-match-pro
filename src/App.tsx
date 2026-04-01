@@ -44,6 +44,7 @@ function AppRoutes() {
   return (
     <Routes>
       <Route path="/auth" element={user ? <Navigate to="/" replace /> : <Auth />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
       <Route path="/profiles" element={<ProtectedRoute><Profiles /></ProtectedRoute>} />
       <Route path="/upload" element={<ProtectedRoute><UploadCVs /></ProtectedRoute>} />
