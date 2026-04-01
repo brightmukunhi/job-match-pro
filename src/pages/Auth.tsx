@@ -13,9 +13,24 @@ export default function Auth() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
+  const [forgotPassword, setForgotPassword] = useState(false);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+
+    if (forgotPassword) {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      if (error) {
+        toast.error(error.message);
+      } else {
+        toast.success("Password reset link sent! Check your email.");
+      }
+      setLoading(false);
+      return;
+    }
 
     if (isLogin) {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
@@ -33,7 +48,7 @@ export default function Auth() {
       if (error) {
         toast.error(error.message);
       } else {
-        toast.success("Check your email to confirm your account");
+        toast.success("Account created! You can now sign in.");
       }
     }
 
@@ -65,10 +80,10 @@ export default function Auth() {
       <Card className="w-full max-w-md border-border/50 shadow-2xl shadow-primary/5 animate-fade-in-delay-1">
         <CardHeader className="text-center pb-2">
           <CardTitle className="text-xl font-display">
-            {isLogin ? "Welcome back" : "Create account"}
+            {forgotPassword ? "Reset password" : isLogin ? "Welcome back" : "Create account"}
           </CardTitle>
           <CardDescription>
-            {isLogin ? "Sign in to access the recruitment dashboard" : "Get started with CV Auto-Ranker"}
+            {forgotPassword ? "Enter your email to receive a reset link" : isLogin ? "Sign in to access the recruitment dashboard" : "Get started with CV Auto-Ranker"}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -88,41 +103,64 @@ export default function Auth() {
                 />
               </div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="password" className="text-sm font-medium">Password</Label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  id="password"
-                  type="password"
-                  value={password}
-                  onChange={e => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="pl-10 h-11 bg-secondary/50 border-border/50 focus:bg-card transition-colors"
-                  required
-                  minLength={6}
-                />
+            {!forgotPassword && (
+              <div className="space-y-2">
+                <Label htmlFor="password" className="text-sm font-medium">Password</Label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="password"
+                    type="password"
+                    value={password}
+                    onChange={e => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="pl-10 h-11 bg-secondary/50 border-border/50 focus:bg-card transition-colors"
+                    required
+                    minLength={6}
+                  />
+                </div>
               </div>
-            </div>
+            )}
+            {isLogin && !forgotPassword && (
+              <div className="text-right">
+                <button
+                  type="button"
+                  onClick={() => setForgotPassword(true)}
+                  className="text-xs text-muted-foreground hover:text-primary transition-colors"
+                >
+                  Forgot password?
+                </button>
+              </div>
+            )}
             <Button type="submit" className="w-full h-11 gradient-primary text-primary-foreground font-medium gap-2 glow hover:opacity-90 transition-opacity" disabled={loading}>
               {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : (
                 <>
-                  {isLogin ? "Sign In" : "Create Account"}
+                  {forgotPassword ? "Send Reset Link" : isLogin ? "Sign In" : "Create Account"}
                   <ArrowRight className="h-4 w-4" />
                 </>
               )}
             </Button>
           </form>
 
-          <div className="mt-6 text-center">
-            <button
-              type="button"
-              onClick={() => setIsLogin(!isLogin)}
-              className="text-sm text-muted-foreground hover:text-primary transition-colors"
-            >
-              {isLogin ? "Don't have an account? " : "Already have an account? "}
-              <span className="font-medium text-primary">{isLogin ? "Sign up" : "Sign in"}</span>
-            </button>
+          <div className="mt-6 text-center space-y-2">
+            {forgotPassword ? (
+              <button
+                type="button"
+                onClick={() => setForgotPassword(false)}
+                className="text-sm text-muted-foreground hover:text-primary transition-colors"
+              >
+                <span className="font-medium text-primary">Back to sign in</span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setIsLogin(!isLogin)}
+                className="text-sm text-muted-foreground hover:text-primary transition-colors"
+              >
+                {isLogin ? "Don't have an account? " : "Already have an account? "}
+                <span className="font-medium text-primary">{isLogin ? "Sign up" : "Sign in"}</span>
+              </button>
+            )}
           </div>
         </CardContent>
       </Card>

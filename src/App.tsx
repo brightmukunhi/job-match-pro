@@ -9,6 +9,7 @@ import Profiles from "./pages/Profiles";
 import UploadCVs from "./pages/UploadCVs";
 import Rankings from "./pages/Rankings";
 import Auth from "./pages/Auth";
+import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
 import { Loader2 } from "lucide-react";
 
@@ -43,6 +44,7 @@ function AppRoutes() {
   return (
     <Routes>
       <Route path="/auth" element={user ? <Navigate to="/" replace /> : <Auth />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
       <Route path="/profiles" element={<ProtectedRoute><Profiles /></ProtectedRoute>} />
       <Route path="/upload" element={<ProtectedRoute><UploadCVs /></ProtectedRoute>} />
